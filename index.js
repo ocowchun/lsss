@@ -1,61 +1,72 @@
 #!/usr/bin/env node
 
 /**
-* Module dependencies.
-*/
+ * Module dependencies.
+ */
 
 
 var program = require('commander');
-// var Thing = require('./lib/thing');
-// var render = require('./lib/render');
-// var init = require('./lib/init');
+var fs = require('fs');
+var Rx = require('rx');
+var bytes = require('bytes');
+var colors = require('colors');
+var userid = require('userid');
 
 program
-    .version('0.0.1')
+  .version('0.0.1')
 
-// program
-//     .command('now <thing>')
-//     .description('run remote setup commands')
-//     .action(function(thing) {
-//         if (process.argv.length !== 4) {
-//             // when user type da now eat apple
-//             // [ 'node', '/usr/local/bin/da', 'now', 'eat', 'apple' ]
-//             var args = process.argv;
-//             thing = args.slice(3, args.length).join(' ')
-//         }
-        
-//         Thing.create(thing, function(content) {
-//             var result = render.renderCreateThing(content);
-//             console.log(result);
-//         });
-//     });
+function renderFile(fileName, file) {
+  var fileSize = file['size'];
+  var str = [];
+  var userName = userid.username(file.uid);
+  var groupName = userid.groupname(file.gid);
 
-// program
-//     .command('today')
-//     .description('list things happen today')
-//     .action(function() {
-//         Thing.getToday(function(things) {
-//             var result = render.renderTodayThings(things);
-//             console.log(result);
-//         });
-//     });
+  str.push(userName);
+  str.push(groupName);
 
-// program
-//     .command('last')
-//     .description('show last thing')
-//     .action(function() {
-//         Thing.getLast(function(thing) {
-//             var result = render.renderLastThing(thing);
-//             console.log(result);
-//         });
-//     });
+  str.push(bytes(fileSize).green)
+
+  // str.push(file['mtime']);
+
+  if (file.isFile()) {
+    str.push(fileName)
+  } else {
+    str.push(fileName.cyan)
+  }
+
+  console.log(str.join(' '));
+}
+// http://code-maven.com/system-information-about-a-file-or-directory-in-nodejs
+
+
+function showFile() {
+  var dirPath = process.cwd();
+  fs.readdir(dirPath, function(err, files) {
+    Rx.Observable.from(files, function(path) {
+      return [path, fs.statSync(dirPath + '/' + path)];
+    }).subscribe(
+      function(data) {
+        renderFile.apply(this, data);
+      },
+      function(err) {
+        console.log('Error: ' + err);
+      },
+      function() {
+      });
+
+  });
+}
 
 program
-    .command('init')
-    .description('initialize da config')
-    .action(function() {
-            console.log(__dirname);
+  .command('init')
+  .description('initialize da config')
+  .action(function() {
+    console.log(process.cwd());
 
-    });
+  });
 
 program.parse(process.argv);
+
+if (!process.argv.slice(2).length) {
+  showFile();
+}

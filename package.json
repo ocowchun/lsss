@@ -1,17 +1,21 @@
 {
-  "name": "nodels",
+  "name": "lls",
   "version": "0.0.1",
   "description": "",
   "main": "index.js",
   "bin": {
-    "lss": "index.js"
+    "lls": "index.js"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "dependencies": {
-    "commander": "^2.8.1"
+    "bytes": "^2.1.0",
+    "colors": "^1.1.2",
+    "commander": "^2.8.1",
+    "rx": "^3.1.1",
+    "userid": "^0.1.3"
   }
 }
