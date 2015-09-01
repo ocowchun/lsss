@@ -8,6 +8,7 @@
 var program = require('commander');
 var fs = require('fs');
 var _ = require('lodash');
+var moment = require('moment');
 var bytes = require('bytes');
 var colors = require('colors');
 var userid = require('userid');
@@ -28,6 +29,8 @@ function procressFile(fileName, file) {
   str.push(groupName);
   str.push(bytes(fileSize));
   str.push(fileName);
+  str.push(file.mtime.getTime());
+
 
   if (!file.isFile()) {
     status.isFile = false;
@@ -50,6 +53,11 @@ function addSpace(str, num) {
   return str + getSpace(num - str.length);
 }
 
+function renderTime(milliseconds) {
+  var time = moment(milliseconds);
+  return time.format('YYYY/MM/DD HH:mm:ss(ZZ)');
+}
+
 function renderFile(data, maxStrs) {
   var strs = [];
   strs.push(addSpace(data.data[0], maxStrs[0]));
@@ -60,6 +68,8 @@ function renderFile(data, maxStrs) {
   } else {
     strs.push(addSpace(data.data[3], maxStrs[3]).cyan);
   }
+  strs.push(renderTime(data.data[4]));
+
   console.log(strs.join(' '));
 }
 // http://code-maven.com/system-information-about-a-file-or-directory-in-nodejs
