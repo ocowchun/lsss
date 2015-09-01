@@ -7,7 +7,7 @@
 
 var program = require('commander');
 var fs = require('fs');
-var Rx = require('rx');
+var _ = require('lodash');
 var bytes = require('bytes');
 var colors = require('colors');
 var userid = require('userid');
@@ -15,26 +15,52 @@ var userid = require('userid');
 program
   .version('0.0.1')
 
-function renderFile(fileName, file) {
+function procressFile(fileName, file) {
   var fileSize = file['size'];
   var str = [];
   var userName = userid.username(file.uid);
   var groupName = userid.groupname(file.gid);
+  var status = {
+    isFile: true
+  };
 
   str.push(userName);
   str.push(groupName);
+  str.push(bytes(fileSize));
+  str.push(fileName);
 
-  str.push(bytes(fileSize).green)
-
-  // str.push(file['mtime']);
-
-  if (file.isFile()) {
-    str.push(fileName)
-  } else {
-    str.push(fileName.cyan)
+  if (!file.isFile()) {
+    status.isFile = false;
   }
+  return {
+    data: str,
+    status: status
+  };
+}
 
-  console.log(str.join(' '));
+function getSpace(num) {
+  var str = "";
+  for (var i = 0, max = num; i < max; i++) {
+    str += " ";
+  }
+  return str;
+}
+
+function addSpace(str, num) {
+  return str + getSpace(num - str.length);
+}
+
+function renderFile(data, maxStrs) {
+  var strs = [];
+  strs.push(addSpace(data.data[0], maxStrs[0]));
+  strs.push(addSpace(data.data[1], maxStrs[1]));
+  strs.push(addSpace(data.data[2], maxStrs[2]).blue);
+  if (data.status.isFile) {
+    strs.push(addSpace(data.data[3], maxStrs[3]));
+  } else {
+    strs.push(addSpace(data.data[3], maxStrs[3]).cyan);
+  }
+  console.log(strs.join(' '));
 }
 // http://code-maven.com/system-information-about-a-file-or-directory-in-nodejs
 
@@ -42,17 +68,19 @@ function renderFile(fileName, file) {
 function showFile() {
   var dirPath = process.cwd();
   fs.readdir(dirPath, function(err, files) {
-    Rx.Observable.from(files, function(path) {
-      return [path, fs.statSync(dirPath + '/' + path)];
-    }).subscribe(
-      function(data) {
-        renderFile.apply(this, data);
-      },
-      function(err) {
-        console.log('Error: ' + err);
-      },
-      function() {
+    var fileDatas = _.map(files, function(path) {
+      var data = [path, fs.statSync(dirPath + '/' + path)];
+      return procressFile.apply(this, data);
+    });
+
+    var maxStrs = _.reduce(fileDatas, function(memo, file) {
+      return _.map(_.zip(memo, file.data), function(elem) {
+        return _.max([elem[0], elem[1].length]);
       });
+    }, [0, 0, 0, 0]);
+    _.each(fileDatas, function(data) {
+      renderFile(data, maxStrs);
+    });
 
   });
 }
